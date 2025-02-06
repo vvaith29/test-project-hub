@@ -1,0 +1,22 @@
+Effort Saved
+Manual XML Updates Eliminated :
+Automated updating of date fields in XML files, saving time and reducing human error.
+ZIP File Creation Simplified :
+Automated the creation of ZIP files from updated XML files, eliminating manual compression steps.
+Git Operations Streamlined :
+Automated Git commands (add, commit, push), reducing repetitive tasks and ensuring consistent commits.
+Jenkins Build Triggering Automated :
+Automated interaction with Jenkins UI to input build parameters and trigger builds, saving significant manual effort.
+Error Reduction :
+Minimized human errors in file updates, Git operations, and Jenkins configurations by automating repetitive tasks.
+Time Savings :
+Reduced the overall execution time from hours (manual process) to minutes (automated process).
+Enhanced Traceability :
+Generated detailed log files and screenshots for every step, enabling easy debugging and audit trails.
+Scalability Improved :
+Enabled the process to handle multiple jobs or configurations without additional manual intervention.
+Consistency Ensured :
+Standardized the entire workflow, ensuring consistent results across different runs.
+Impact
+This automation not only saves time but also improves accuracy, scalability, and maintainability, allowing the team to focus on higher-value tasks while ensuring a reliable CI/CD pipeline.
+
