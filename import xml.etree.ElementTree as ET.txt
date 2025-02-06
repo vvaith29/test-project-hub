@@ -133,44 +133,33 @@ if __name__ == "__main__":
 
 
 
+# changing the git directory explicitly 
 
-
-# Updating the date tag with my XML TAG 
-
-import xml.etree.ElementTree as ET
-from datetime import datetime
-
-def update_xml_dates(self):
+def push_to_bitbucket(self):
     try:
-        # Parse the XML file
-        tree = ET.parse(self.xml_file)
-        root = tree.getroot()
+        # Change to the Git repository directory
+        repo_path = "C:/path/to/your/repo"  # Replace with the actual path to your Git repository
+        os.chdir(repo_path)
 
-        # Get today's date in 'YYYY-MM-DD' format
-        current_date = datetime.now().strftime('%Y-%m-%d')
+        # Define Git commands
+        commands = [
+            "git add .",
+            f'git commit -m "Pushing {self.zip_file}"',
+            "git push origin main"
+        ]
 
-        # List of date tags to update
-        date_tags = ['IntrBankstldte', 'credDt']
+        # Execute commands
+        for cmd in commands:
+            result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
+            if result.returncode != 0:
+                print(f"Error executing command: {cmd}")
+                print(result.stderr)
+                return False
+            print(result.stdout)
 
-        # Update each date tag
-        for tag_name in date_tags:
-            for date_tag in root.findall(f'.//{tag_name}'):
-                if tag_name == 'credDt':
-                    # Handle credDt (date-time format)
-                    original_value = date_tag.text
-                    if original_value:
-                        # Split into date and time portions
-                        date_part, time_part = original_value.split('T', 1)
-                        # Replace the date part with the current date
-                        date_tag.text = f"{current_date}T{time_part}"
-                else:
-                    # Handle IntrBankstldte (date-only format)
-                    date_tag.text = current_date
-
-        # Save the updated XML file
-        tree.write(self.xml_file, encoding='utf-8', xml_declaration=True)
-        print(f"Updated dates in {self.xml_file}")
+        print("Pushed ZIP file to Bitbucket successfully.")
+        time.sleep(60)  # Wait for 1 minute to ensure the push is successful
+        return True
     except Exception as e:
-        print(f"Error updating XML: {e}")
-
-
+        print(f"Error pushing to Bitbucket: {e}")
+        return False
