@@ -137,19 +137,35 @@ if __name__ == "__main__":
 
 # Updating the date tag with my XML TAG 
 
+import xml.etree.ElementTree as ET
+from datetime import datetime
+
 def update_xml_dates(self):
     try:
         # Parse the XML file
         tree = ET.parse(self.xml_file)
         root = tree.getroot()
 
-        # List of date tag names to update
+        # Get today's date in 'YYYY-MM-DD' format
+        current_date = datetime.now().strftime('%Y-%m-%d')
+
+        # List of date tags to update
         date_tags = ['IntrBankstldte', 'credDt']
 
         # Update each date tag
         for tag_name in date_tags:
             for date_tag in root.findall(f'.//{tag_name}'):
-                date_tag.text = time.strftime('%Y-%m-%d')  # Update to current date
+                if tag_name == 'credDt':
+                    # Handle credDt (date-time format)
+                    original_value = date_tag.text
+                    if original_value:
+                        # Split into date and time portions
+                        date_part, time_part = original_value.split('T', 1)
+                        # Replace the date part with the current date
+                        date_tag.text = f"{current_date}T{time_part}"
+                else:
+                    # Handle IntrBankstldte (date-only format)
+                    date_tag.text = current_date
 
         # Save the updated XML file
         tree.write(self.xml_file, encoding='utf-8', xml_declaration=True)
