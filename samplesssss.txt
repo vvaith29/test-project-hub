@@ -20,3 +20,10 @@ Standardized the entire workflow, ensuring consistent results across different r
 Impact
 This automation not only saves time but also improves accuracy, scalability, and maintainability, allowing the team to focus on higher-value tasks while ensuring a reliable CI/CD pipeline.
 
+
+Pre-Requisites
+XML File Configuration : Ensure the XML file is properly structured with required tags (e.g., IntrBankstldte, credDt) for date updates.
+Git Repository Setup : Verify the Bitbucket repository is initialized and accessible, with proper authentication configured.
+Jenkins Job Availability : Confirm the Jenkins job is created and configured to accept build parameters via the UI.
+WebDriver Installation : Install the appropriate browser WebDriver (e.g., Edge WebDriver) and ensure it matches the browser version.
+
