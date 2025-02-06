@@ -1,0 +1,132 @@
+import xml.etree.ElementTree as ET
+import zipfile
+import os
+import subprocess
+import time
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+
+
+class JenkinsAutomation:
+    def __init__(self, xml_file, jenkins_url, job_name, username, password):
+        self.xml_file = xml_file
+        self.zip_file = None
+        self.jenkins_url = jenkins_url
+        self.job_name = job_name
+        self.username = username
+        self.password = password
+
+    def update_xml_dates(self):
+        """Update dates in the XML file."""
+        try:
+            tree = ET.parse(self.xml_file)
+            root = tree.getroot()
+
+            # Update date fields (assuming the tag is <date>)
+            for date_tag in root.findall('.//date'):
+                date_tag.text = time.strftime('%Y-%m-%d')  # Update to current date
+
+            tree.write(self.xml_file, encoding='utf-8', xml_declaration=True)
+            print(f"Updated dates in {self.xml_file}")
+        except Exception as e:
+            print(f"Error updating XML: {e}")
+
+    def create_zip_file(self):
+        """Create a ZIP file containing the updated XML file."""
+        try:
+            self.zip_file = os.path.splitext(self.xml_file)[0] + '.zip'
+            with zipfile.ZipFile(self.zip_file, 'w', zipfile.ZIP_DEFLATED) as zipf:
+                zipf.write(self.xml_file, os.path.basename(self.xml_file))
+            print(f"Created ZIP file: {self.zip_file}")
+        except Exception as e:
+            print(f"Error creating ZIP file: {e}")
+
+    def push_to_bitbucket(self):
+        """Push the ZIP file to Bitbucket using Git Bash commands."""
+        try:
+            commands = [
+                "git add .",
+                f'git commit -m "Pushing {self.zip_file}"',
+                "git push origin main"
+            ]
+
+            for cmd in commands:
+                result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
+                if result.returncode != 0:
+                    print(f"Error executing command: {cmd}")
+                    print(result.stderr)
+                    return False
+                print(result.stdout)
+
+            print("Pushed ZIP file to Bitbucket successfully.")
+            time.sleep(60)  # Wait for 1 minute to ensure the push is successful
+            return True
+        except Exception as e:
+            print(f"Error pushing to Bitbucket: {e}")
+            return False
+
+    def automate_jenkins(self):
+        """Automate Jenkins UI to trigger the build."""
+        try:
+            # Initialize WebDriver (ensure chromedriver is in PATH)
+            driver = webdriver.Chrome()
+            driver.get(f"{self.jenkins_url}/job/{self.job_name}/build?delay=0sec")
+
+            # Log in to Jenkins (if required)
+            driver.find_element(By.ID, "j_username").send_keys(self.username)
+            driver.find_element(By.NAME, "j_password").send_keys(self.password)
+            driver.find_element(By.NAME, "Submit").click()
+
+            # Enter build parameters
+            driver.find_element(By.NAME, "parameter1").send_keys(self.zip_file)  # Replace with actual parameter names
+            driver.find_element(By.NAME, "parameter2").send_keys("other-value")
+
+            # Trigger the build
+            driver.find_element(By.ID, "build-button").click()  # Replace with the actual button ID
+            print("Build triggered successfully.")
+
+            # Wait for the build to complete
+            time.sleep(60)  # Adjust based on expected build time
+
+            # Validate build success
+            status = driver.find_element(By.ID, "build-status").text  # Replace with actual status element
+            if "SUCCESS" in status:
+                print("Build completed successfully.")
+            else:
+                print("Build failed.")
+
+            # Close the browser
+            driver.quit()
+        except Exception as e:
+            print(f"Error automating Jenkins: {e}")
+
+    def run_automation(self):
+        """Run the entire automation process."""
+        try:
+            # Step 1: Update XML file
+            self.update_xml_dates()
+
+            # Step 2: Create ZIP file
+            self.create_zip_file()
+
+            # Step 3: Push to Bitbucket
+            if self.push_to_bitbucket():
+                # Step 4: Automate Jenkins UI
+                self.automate_jenkins()
+        except Exception as e:
+            print(f"Automation failed: {e}")
+
+
+# Example usage
+if __name__ == "__main__":
+    # Initialize the automation class
+    automation = JenkinsAutomation(
+        xml_file="config.xml",
+        jenkins_url="http://your-jenkins-url",
+        job_name="your-job-name",
+        username="your-username",
+        password="your-password"
+    )
+
+    # Run the automation
+    automation.run_automation()
