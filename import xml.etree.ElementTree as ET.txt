@@ -1,172 +1,116 @@
-import os
-import logging
+import jinja2
 from datetime import datetime
-from selenium import webdriver
-from selenium.webdriver.common.by import By
-import xml.etree.ElementTree as ET
-import zipfile
-import subprocess
-import time
 
-class JenkinsAutomation:
-    def __init__(self, xml_file, jenkins_url, job_name, username, password):
-        self.xml_file = xml_file
-        self.zip_file = None
-        self.jenkins_url = jenkins_url
-        self.job_name = job_name
-        self.username = username
-        self.password = password
-        self.log_dir = "logs"
-        self.screenshot_dir = "screenshots"
-        self.setup_directories()
-        self.setup_logger()
-
-    def setup_directories(self):
-        """Create directories for logs and screenshots."""
-        os.makedirs(self.log_dir, exist_ok=True)
-        os.makedirs(self.screenshot_dir, exist_ok=True)
-
-    def setup_logger(self):
-        """Set up logging configuration."""
-        log_file = os.path.join(self.log_dir, f"automation_{datetime.now().strftime('%Y%m%d_%H%M%S')}.log")
-        logging.basicConfig(
-            filename=log_file,
-            level=logging.INFO,
-            format="%(asctime)s - %(levelname)s - %(message)s",
-            datefmt="%Y-%m-%d %H:%M:%S"
-        )
-        logging.info("Automation started.")
-
-    def update_xml_dates(self):
-        """Update dates in the XML file."""
-        try:
-            tree = ET.parse(self.xml_file)
-            root = tree.getroot()
-
-            # Update date fields
-            for date_tag in root.findall('.//date'):
-                date_tag.text = datetime.now().strftime('%Y-%m-%d')
-
-            tree.write(self.xml_file, encoding='utf-8', xml_declaration=True)
-            logging.info(f"Updated dates in {self.xml_file}")
-        except Exception as e:
-            logging.error(f"Error updating XML: {e}")
-
-    def create_zip_file(self):
-        """Create a ZIP file containing the updated XML file."""
-        try:
-            self.zip_file = os.path.splitext(self.xml_file)[0] + '.zip'
-            with zipfile.ZipFile(self.zip_file, 'w', zipfile.ZIP_DEFLATED) as zipf:
-                zipf.write(self.xml_file, os.path.basename(self.xml_file))
-            logging.info(f"Created ZIP file: {self.zip_file}")
-        except Exception as e:
-            logging.error(f"Error creating ZIP file: {e}")
-
-    def push_to_bitbucket(self):
-        """Push the ZIP file to Bitbucket using Git Bash commands."""
-        try:
-            commands = [
-                "git add .",
-                f'git commit -m "Pushing {self.zip_file}"',
-                "git push origin main"
-            ]
-
-            for cmd in commands:
-                result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
-                if result.returncode != 0:
-                    logging.error(f"Error executing command: {cmd}")
-                    logging.error(result.stderr)
-                    return False
-                logging.info(result.stdout)
-
-            logging.info("Pushed ZIP file to Bitbucket successfully.")
-            time.sleep(60)  # Wait for 1 minute to ensure the push is successful
-            return True
-        except Exception as e:
-            logging.error(f"Error pushing to Bitbucket: {e}")
-            return False
-
-    def automate_jenkins(self):
-        """Automate Jenkins UI to trigger the build."""
-        try:
-            # Specify the explicit path to the Edge WebDriver
-            edge_driver_path = "C:/path/to/msedgedriver.exe"
-            driver = webdriver.Edge(executable_path=edge_driver_path)
-
-            # Open the Jenkins job URL
-            driver.get(f"{self.jenkins_url}/job/{self.job_name}/build?delay=0sec")
-
-            # Take a screenshot after opening Jenkins
-            self.take_screenshot(driver, "jenkins_login_page")
-
-            # Log in to Jenkins (if required)
-            driver.find_element(By.ID, "j_username").send_keys(self.username)
-            driver.find_element(By.NAME, "j_password").send_keys(self.password)
-            driver.find_element(By.NAME, "Submit").click()
-
-            # Take a screenshot after logging in
-            self.take_screenshot(driver, "jenkins_after_login")
-
-            # Enter build parameters
-            driver.find_element(By.NAME, "parameter1").send_keys(self.zip_file)  # Replace with actual parameter names
-            driver.find_element(By.NAME, "parameter2").send_keys("other-value")
-
-            # Trigger the build
-            driver.find_element(By.ID, "build-button").click()  # Replace with the actual button ID
-            logging.info("Build triggered successfully.")
-
-            # Take a screenshot after triggering the build
-            self.take_screenshot(driver, "jenkins_build_triggered")
-
-            # Wait for the build to complete
-            time.sleep(60)  # Adjust based on expected build time
-
-            # Validate build success
-            status = driver.find_element(By.ID, "build-status").text  # Replace with actual status element
-            if "SUCCESS" in status:
-                logging.info("Build completed successfully.")
-            else:
-                logging.error("Build failed.")
-
-            # Take a screenshot of the build status
-            self.take_screenshot(driver, "jenkins_build_status")
-
-            # Close the browser
-            driver.quit()
-        except Exception as e:
-            logging.error(f"Error automating Jenkins: {e}")
-
-    def take_screenshot(self, driver, name):
-        """Take a screenshot and save it to the screenshots directory."""
-        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-        screenshot_path = os.path.join(self.screenshot_dir, f"{name}_{timestamp}.png")
-        driver.save_screenshot(screenshot_path)
-        logging.info(f"Screenshot saved: {screenshot_path}")
-
-    def run_automation(self):
-        """Run the entire automation process."""
-        try:
-            # Step 1: Update XML file
-            self.update_xml_dates()
-
-            # Step 2: Create ZIP file
-            self.create_zip_file()
-
-            # Step 3: Push to Bitbucket
-            if self.push_to_bitbucket():
-                # Step 4: Automate Jenkins UI
-                self.automate_jenkins()
-        except Exception as e:
-            logging.error(f"Automation failed: {e}")
-
-
-# Example usage
-if __name__ == "__main__":
-    automation = JenkinsAutomation(
-        xml_file="C:/projects/config.xml",
-        jenkins_url="http://localhost:8080",
-        job_name="DeployPipeline",
-        username="admin",
-        password="mypassword"
+def generate_html_report(differences, output_file="report.html"):
+    template = """
+    <html>
+      <body>
+        <h1>XML Comparison Report - {{ timestamp }}</h1>
+        <table border="1">
+          <tr><th>Element</th><th>Expected</th><th>Actual</th></tr>
+          {% for diff in differences %}
+          <tr>
+            <td>{{ diff.element }}</td>
+            <td>{{ diff.expected }}</td>
+            <td>{{ diff.actual }}</td>
+          </tr>
+          {% endfor %}
+        </table>
+      </body>
+    </html>
+    """
+    rendered = jinja2.Template(template).render(
+        timestamp=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        differences=differences
     )
-    automation.run_automation()
+    with open(output_file, "w") as f:
+        f.write(rendered)
+    print(f"Report saved to {output_file}")
+
+# Your existing comparison function
+def compare_xml(file1, file2):
+    # Your logic to compare XML files
+    return [
+        {"element": "title", "expected": "Hello", "actual": "World"},
+        # ... more differences
+    ]
+
+# Main execution
+if __name__ == "__main__":
+    # Step 1: Compare XML files
+    differences = compare_xml("file1.xml", "file2.xml")
+    
+    # Step 2: Generate report
+    generate_html_report(differences)  # Add this line
+
+
+
+----------------------------------------------------------------------------------------------------------------------------------------
+
+
+import jinja2
+from datetime import datetime
+
+def compare_xml(file1, file2):
+    # Simulate XML comparison logic
+    return [
+        {"element": "title", "expected": "Hello", "actual": "World"},
+        {"element": "author", "expected": "John", "actual": "Jane"}
+    ]
+
+def generate_html_report(differences, output_file="report.html"):
+    template = """
+    <html>
+      <body>
+        <h1>XML Comparison Report - {{ timestamp }}</h1>
+        <table border="1">
+          <tr><th>Element</th><th>Expected</th><th>Actual</th></tr>
+          {% for diff in differences %}
+          <tr>
+            <td>{{ diff.element }}</td>
+            <td>{{ diff.expected }}</td>
+            <td>{{ diff.actual }}</td>
+          </tr>
+          {% endfor %}
+        </table>
+      </body>
+    </html>
+    """
+    rendered = jinja2.Template(template).render(
+        timestamp=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        differences=differences
+    )
+    with open(output_file, "w") as f:
+        f.write(rendered)
+    print(f"Report saved to {output_file}")
+
+if __name__ == "__main__":
+    # Step 1: Compare XML files
+    differences = compare_xml("file1.xml", "file2.xml")
+    
+    # Step 2: Generate report
+    if differences:
+        try:
+            generate_html_report(differences)
+        except Exception as e:
+            print(f"Failed to generate report: {e}")
+    else:
+        print("No differences found. No report generated.")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
