@@ -1,0 +1,172 @@
+{
+  "users": [
+    {
+      "id": "1",
+      "name": "Alice Johnson",
+      "email": "alice.johnson@example.com",
+      "role": "Admin",
+      "isActive": true
+    },
+    {
+      "id": "2",
+      "name": "Bob Smith",
+      "email": "bob.smith@example.com",
+      "role": "User",
+      "isActive": false
+    },
+    {
+      "fullName": "Jimmy Brown",
+      "email": "Jimmy.brown@example.com",
+      "role": "Manager",
+      "isActive": true,
+      "id": "3"
+    },
+    {
+      "id": "4",
+      "fullName": "Prince Diana",
+      "email": "diana.prince@example.com",
+      "role": "User",
+      "isActive": true
+    },
+    {
+      "name": "Flashing Dinho ",
+      "email": "flashinggggdinho@example.com",
+      "role": "developer",
+      "isActive": true,
+      "id": "54d0"
+    },
+    {
+      "id": "320f",
+      "name": "Emily Davis",
+      "email": "emily.davis@example.com",
+      "role": "Editor",
+      "isActive": true
+    },
+    {
+      "id": "fd14",
+      "name": "Michael Lee",
+      "email": "michael.lee@example.com",
+      "role": "Viewer",
+      "isActive": true
+    },
+    {
+      "id": "8f63",
+      "name": "Sophia Martinez",
+      "email": "sophia.martinez@example.com",
+      "role": "Contributor",
+      "isActive": true
+    },
+    {
+      "id": "c0da",
+      "fullName": "Steph Curry",
+      "email": "steph.curry@example.com",
+      "role": "MVP",
+      "isActive": true
+    },
+    {
+      "id": "f238",
+      "fullName": "Seth Curry",
+      "email": "seth.curry@example.com",
+      "role": "MVP",
+      "isActive": true
+    },
+    {
+      "id": "ffea",
+      "name": "Jaylen Green ",
+      "email": "jgreen@pachai.com",
+      "role": "developer",
+      "isActive": true
+    },
+    {
+      "id": "db6d",
+      "name": "Jaylen Green ",
+      "email": "jgreen@pachai.com",
+      "role": "developer",
+      "isActive": true
+    },
+    {
+      "id": "bef8",
+      "name": "Jaylen Green ",
+      "email": "jgreen@pachai.com",
+      "role": "developer",
+      "isActive": true
+    },
+    {
+      "id": "25ab",
+      "name": "Jaylen Green ",
+      "email": "jgreen@pachai.com",
+      "role": "developer",
+      "isActive": true
+    },
+    {
+      "id": "02cd",
+      "name": "Jaylen Green ",
+      "email": "jgreen@pachai.com",
+      "role": "developer",
+      "isActive": true
+    },
+    {
+      "id": "2ea0",
+      "name": "Jaylen Green ",
+      "email": "jgreen@pachai.com",
+      "role": "developer",
+      "isActive": true
+    },
+    {
+      "id": "ed32",
+      "name": "Jaylen Green ",
+      "email": "jgreen@pachai.com",
+      "role": "developer",
+      "isActive": true
+    },
+    {
+      "id": "cd10",
+      "name": "Jaylenn Green ",
+      "email": "jgreen@pachai.com",
+      "role": "developer",
+      "isActive": true
+    },
+    {
+      "id": "cb37",
+      "name": "Jaylenn Green ",
+      "email": "jgreen@pachai.com",
+      "role": "developer",
+      "isActive": true
+    },
+    {
+      "id": "14e9",
+      "name": "Jaylen Green ",
+      "email": "jgreen@pachai.com",
+      "role": "developer",
+      "isActive": true
+    },
+    {
+      "id": "e08e",
+      "name": "Jaylenn Green ",
+      "email": "jgreen@pachai.com",
+      "role": "developer",
+      "isActive": true
+    },
+    {
+      "id": "f799",
+      "name": "Jaylenn Green ",
+      "email": "jgreen@pachai.com",
+      "role": "developer",
+      "isActive": true
+    },
+    {
+      "id": "1d2d",
+      "name": "Jaylenn Green ",
+      "email": "jgreen@pachai.com",
+      "role": "developer",
+      "isActive": true
+    },
+    {
+      "id": "7a60",
+      "name": "Jaylenn Green ",
+      "email": "jgreen@pachai.com",
+      "role": "developer",
+      "isActive": true
+    }
+  ]
+}

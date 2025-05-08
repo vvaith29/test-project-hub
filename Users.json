@@ -1,0 +1,20 @@
+[
+ {
+    "name": "Emily Davis",
+    "email": "emily.davis@example.com",
+    "role": "Editor",
+    "isActive": true
+  },
+  {
+    "name": "Michael Lee",	
+    "email": "michael.lee@example.com",
+    "role": "Viewer",
+    "isActive": false
+  },
+  {
+    "name": "Sophia Martinez",
+    "email": "sophia.martinez@example.com",
+    "role": "Contributor",
+    "isActive": true
+  }
+]
