@@ -1,0 +1,178 @@
+Knowledge Transfer (KT) Document
+1. Overview
+This script automates the process of:
+
+Updating XML files with current dates.
+Creating a unique ZIP file containing all files from a root directory.
+Pushing the ZIP file to a GitLab repository.
+Triggering a Jenkins build using Selenium to automate the Jenkins UI.
+The script uses Python libraries like xml.etree.ElementTree, zipfile, subprocess, selenium, and logging to achieve this.
+
+2. Key Libraries and Their Purpose
+a. xml.etree.ElementTree
+Purpose: Used to parse and modify XML files.
+Key Methods:
+ET.parse(file_path): Parses the XML file into a tree structure.
+tree.getroot(): Retrieves the root element of the XML tree.
+root.findall('.//tag_name'): Finds all elements with the specified tag name.
+tree.write(file_path): Writes the updated XML tree back to the file.
+
+Example : SS1
+
+b. zipfile
+Purpose: Used to create ZIP archives.
+Key Methods:
+ZipFile(file_name, 'w', zipfile.ZIP_DEFLATED): Creates a new ZIP file.
+zipf.write(file_path, os.path.basename(file_path)): Adds a file to the ZIP archive.
+
+SS2
+
+c. subprocess
+Purpose: Executes shell commands (e.g., Git commands).
+Key Methods:
+subprocess.run(command, shell=True, capture_output=True, text=True): Runs a shell command and captures its output.
+
+SS3
+
+d. selenium
+Purpose: Automates web browsers (e.g., Edge) to interact with Jenkins UI.
+Key Methods:
+webdriver.Edge(executable_path=edge_driver_path): Initializes the Edge browser.
+driver.get(url): Opens a URL in the browser.
+driver.find_element(By.ID, "element_id"): Locates an element by its ID.
+driver.send_keys(value): Sends input to an element.
+driver.click(): Simulates a click on an element.
+
+ss4
+
+e. logging
+Purpose: Logs messages for debugging and tracking purposes.
+Key Methods:
+logging.basicConfig(filename=log_file, level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"): Configures logging settings.
+logging.info(message): Logs informational messages.
+logging.error(message): Logs error messages.
+
+ss5
+
+3. Explanation of Methods
+a. __init__
+Purpose: Initializes the class with required parameters.
+Details:
+root_dir: Directory containing files to process.
+jenkins_url, job_name, username, password: Jenkins details.
+gitlab_repo_url: GitLab repository URL.
+log_dir, screenshot_dir: Directories for logs and screenshots.
+Enhancements:
+Add support for multiple GitLab branches.
+Allow customization of log levels (e.g., DEBUG, WARNING).
+b. setup_directories
+Purpose: Creates directories for logs and screenshots.
+Details:
+Uses os.makedirs(directory, exist_ok=True) to ensure directories exist.
+Enhancements:
+Add a cleanup step to remove old logs/screenshots.
+c. setup_logger
+Purpose: Configures logging for the script.
+Details:
+Logs are written to a file named automation_<timestamp>.log.
+Enhancements:
+Add email notifications for critical errors.
+d. update_xml_dates
+Purpose: Updates date fields in XML files.
+Details:
+Handles both date-only (IntrBankstldte) and date-time (credDt) formats.
+Enhancements:
+Support additional date formats (e.g., MM/DD/YYYY).
+e. process_files_in_directory
+Purpose: Processes all files in the root directory.
+Details:
+Scans the directory and updates .xml files.
+Enhancements:
+Add support for other file types (e.g., JSON, YAML).
+f. create_unique_zip_file
+Purpose: Creates a single unique ZIP file containing all files.
+Details:
+Generates a timestamped ZIP file name (e.g., all_files_20231007_143000.zip).
+Enhancements:
+Add compression level options (e.g., ZIP_STORED vs. ZIP_DEFLATED).
+g. push_to_gitlab
+Purpose: Pushes the ZIP file to GitLab.
+Details:
+Uses Git commands (git init, git add, git commit, git push) to push the file.
+Enhancements:
+Use SSH keys for authentication instead of embedding credentials.
+h. automate_jenkins
+Purpose: Automates Jenkins UI to trigger builds.
+Details:
+Logs into Jenkins, inputs build parameters, and triggers the build.
+Enhancements:
+Add retry logic for failed builds.
+Support multiple Jenkins jobs.
+i. take_screenshot
+Purpose: Captures screenshots during automation.
+Details:
+Saves screenshots with a timestamped name (e.g., jenkins_login_page_20231007_143000.png).
+Enhancements:
+Add annotations or highlights to screenshots.
+j. run_automation
+Purpose: Orchestrates the entire automation process.
+Details:
+Calls methods in sequence: process_files_in_directory, create_unique_zip_file, push_to_gitlab, automate_jenkins.
+4. How It Works
+Input: A root directory containing files (e.g., .xml, .acq, .rec).
+Process:
+Update dates in .xml files.
+Create a unique ZIP file containing all files.
+Push the ZIP file to GitLab.
+Trigger a Jenkins build with the ZIP file as a parameter.
+Output:
+Updated XML files.
+A unique ZIP file.
+Logs and screenshots for tracking.
+5. Possible Enhancements
+Error Handling:
+Add more robust error handling for edge cases (e.g., missing files, GitLab push failures).
+Configuration Management:
+Use a configuration file (e.g., config.json) to store parameters like root_dir, gitlab_repo_url, etc.
+Parallel Processing:
+Process multiple files or trigger multiple Jenkins jobs in parallel.
+Security:
+Avoid hardcoding credentials; use environment variables or secrets managers.
+Notifications:
+Send email or Slack notifications for success/failure.
+6. Example Workflow
+Input Directory:
+
+ss6
+
+C:/projects/xmls/
+    config1.xml
+    config2.xml
+    data.acq
+    report.rec
+
+
+Output --xml update
+<root>
+    <IntrBankstldte>2023-10-07</IntrBankstldte>
+    <credDt>2023-10-07T14:30:00+02:00</credDt>
+</root>
+
+unique ZIP file 
+C:/projects/xmls/all_files_20231007_143000.zip
+Logs
+2023-10-07 14:30:00 - INFO - Automation started.
+2023-10-07 14:31:00 - INFO - Updated dates in config1.xml.
+2023-10-07 14:32:00 - INFO - Created unique ZIP file: all_files_20231007_143000.zip.
+2023-10-07 14:33:00 - INFO - Pushed unique ZIP file to GitLab successfully.
+2023-10-07 14:34:00 - INFO - Build triggered successfully.
+
+7. Conclusion
+This script provides a robust framework for automating the end-to-end process of updating XML files, creating ZIP archives, pushing to GitLab, and triggering Jenkins builds. By understanding the methods, libraries, and enhancements, your team can maintain and extend this script effectively.
+
+
+
+
+
+
+

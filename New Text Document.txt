@@ -1,0 +1,281 @@
+import os
+import logging
+from datetime import datetime
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+import xml.etree.ElementTree as ET
+import zipfile
+import subprocess
+import time
+
+class JenkinsAutomation:
+    def __init__(self, root_dir, jenkins_url, job_name, username, password, gitlab_repo_url, screenshot_dir="screenshots", log_dir="logs"):
+        self.root_dir = root_dir  # Root directory containing files
+        self.jenkins_url = jenkins_url
+        self.job_name = job_name
+        self.username = username
+        self.password = password
+        self.gitlab_repo_url = gitlab_repo_url  # GitLab repository URL
+        self.log_dir = log_dir
+        self.screenshot_dir = screenshot_dir
+        self.zip_file = None  # To store the unique ZIP file name
+        self.setup_directories()
+        self.setup_logger()
+
+    def setup_directories(self):
+        """Create directories for logs and screenshots."""
+        os.makedirs(self.log_dir, exist_ok=True)
+        os.makedirs(self.screenshot_dir, exist_ok=True)
+
+    def setup_logger(self):
+        """Set up logging configuration."""
+        log_file = os.path.join(self.log_dir, f"automation_{datetime.now().strftime('%Y%m%d_%H%M%S')}.log")
+        logging.basicConfig(
+            filename=log_file,
+            level=logging.INFO,
+            format="%(asctime)s - %(levelname)s - %(message)s",
+            datefmt="%Y-%m-%d %H:%M:%S"
+        )
+        logging.info("Automation started.")
+
+    def update_xml_dates(self, file_path):
+        """Update dates in a single XML file."""
+        try:
+            tree = ET.parse(file_path)
+            root = tree.getroot()
+
+            # Update date fields (replace 'IntrBankstldte' and 'credDt' with your actual tag names)
+            date_tags = ['IntrBankstldte', 'credDt']
+            current_date = datetime.now().strftime('%Y-%m-%d')
+
+            for tag_name in date_tags:
+                for date_tag in root.findall(f'.//{tag_name}'):
+                    if tag_name == 'credDt':  # Handle date-time format
+                        original_value = date_tag.text
+                        if original_value:
+                            date_part, time_part = original_value.split('T', 1)
+                            date_tag.text = f"{current_date}T{time_part}"
+                    else:  # Handle date-only format
+                        date_tag.text = current_date
+
+            tree.write(file_path, encoding='utf-8', xml_declaration=True)
+            logging.info(f"Updated dates in {file_path}")
+        except Exception as e:
+            logging.error(f"Error updating XML file {file_path}: {e}")
+
+    def process_files_in_directory(self):
+        """Process all files in the root directory."""
+        try:
+            for file_name in os.listdir(self.root_dir):
+                file_path = os.path.join(self.root_dir, file_name)
+                if os.path.isfile(file_path):  # Ensure it's a file, not a directory
+                    if file_name.endswith('.xml'):  # Only process XML files
+                        logging.info(f"Processing XML file: {file_path}")
+                        self.update_xml_dates(file_path)
+        except Exception as e:
+            logging.error(f"Error processing files in directory: {e}")
+
+    def create_unique_zip_file(self):
+        """Create a single unique ZIP file containing all files in the root directory."""
+        try:
+            # Generate a unique ZIP file name based on the current timestamp
+            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+            self.zip_file = os.path.join(self.root_dir, f"all_files_{timestamp}.zip")
+
+            with zipfile.ZipFile(self.zip_file, 'w', zipfile.ZIP_DEFLATED) as zipf:
+                for file_name in os.listdir(self.root_dir):
+                    file_path = os.path.join(self.root_dir, file_name)
+                    if os.path.isfile(file_path):  # Only add files, not directories
+                        zipf.write(file_path, os.path.basename(file_path))
+
+            logging.info(f"Created unique ZIP file: {self.zip_file}")
+        except Exception as e:
+            logging.error(f"Error creating unique ZIP file: {e}")
+
+    def push_to_gitlab(self):
+        """Push the unique ZIP file to GitLab using Git commands."""
+        try:
+            if not self.zip_file:
+                logging.error("No ZIP file created to push to GitLab.")
+                return False
+
+            # Set up Git remote URL with authentication
+            remote_url = self.gitlab_repo_url.replace("https://", f"https://{self.username}:{self.password}@")
+            commands = [
+                "git init",  # Initialize Git repository (if not already initialized)
+                f"git remote add origin {remote_url}",  # Add GitLab remote URL
+                "git add .",
+                f'git commit -m "Pushing {os.path.basename(self.zip_file)}"',
+                "git push origin main"  # Push to the main branch
+            ]
+
+            for cmd in commands:
+                result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
+                if result.returncode != 0:
+                    logging.error(f"Error executing command: {cmd}")
+                    logging.error(result.stderr)
+                    return False
+                logging.info(result.stdout)
+
+            logging.info(f"Pushed unique ZIP file {self.zip_file} to GitLab successfully.")
+            time.sleep(60)  # Wait for 1 minute to ensure the push is successful
+            return True
+        except Exception as e:
+            logging.error(f"Error pushing to GitLab: {e}")
+            return False
+
+    def automate_jenkins(self):
+        """Automate Jenkins UI to trigger the build."""
+        try:
+            if not self.zip_file:
+                logging.error("No ZIP file created to pass to Jenkins.")
+                return
+
+            # Specify the explicit path to the Edge WebDriver
+            edge_driver_path = "C:/path/to/msedgedriver.exe"  # Replace with the actual path to your Edge WebDriver
+            driver = webdriver.Edge(executable_path=edge_driver_path)
+
+            # Open the Jenkins job URL
+            driver.get(f"{self.jenkins_url}/job/{self.job_name}/build?delay=0sec")
+
+            # Take a screenshot after opening Jenkins
+            self.take_screenshot(driver, "jenkins_login_page")
+
+            # Log in to Jenkins (if required)
+            driver.find_element(By.ID, "j_username").send_keys(self.username)
+            driver.find_element(By.NAME, "j_password").send_keys(self.password)
+            driver.find_element(By.NAME, "Submit").click()
+
+            # Take a screenshot after logging in
+            self.take_screenshot(driver, "jenkins_after_login")
+
+            # Enter build parameters
+            driver.find_element(By.NAME, "parameter1").send_keys(self.zip_file)  # Dynamically pass the unique ZIP file
+            driver.find_element(By.NAME, "parameter2").send_keys("other-value")
+
+            # Trigger the build
+            driver.find_element(By.ID, "build-button").click()  # Replace with the actual button ID
+            logging.info(f"Build triggered successfully for {self.zip_file}.")
+
+            # Take a screenshot after triggering the build
+            self.take_screenshot(driver, "jenkins_build_triggered")
+
+            # Wait for the build to complete
+            time.sleep(60)  # Adjust based on expected build time
+
+            # Validate build success
+            status = driver.find_element(By.ID, "build-status").text  # Replace with actual status element
+            if "SUCCESS" in status:
+                logging.info(f"Build completed successfully for {self.zip_file}.")
+            else:
+                logging.error(f"Build failed for {self.zip_file}.")
+
+            # Take a screenshot of the build status
+            self.take_screenshot(driver, "jenkins_build_status")
+
+            # Close the browser
+            driver.quit()
+        except Exception as e:
+            logging.error(f"Error automating Jenkins: {e}")
+
+    def take_screenshot(self, driver, name):
+        """Take a screenshot and save it to the screenshots directory."""
+        try:
+            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+            screenshot_path = os.path.join(self.screenshot_dir, f"{name}_{timestamp}.png")
+            driver.save_screenshot(screenshot_path)
+            logging.info(f"Screenshot saved: {screenshot_path}")
+        except Exception as e:
+            logging.error(f"Error saving screenshot: {e}")
+
+    def run_automation(self):
+        """Run the entire automation process."""
+        try:
+            logging.info("Step 1: Processing files in directory...")
+            self.process_files_in_directory()
+
+            logging.info("Step 2: Creating unique ZIP file...")
+            self.create_unique_zip_file()
+
+            logging.info("Step 3: Pushing unique ZIP file to GitLab...")
+            if self.push_to_gitlab():
+                logging.info("Step 4: Automating Jenkins UI...")
+                self.automate_jenkins()
+            else:
+                logging.error("Failed to push unique ZIP file to GitLab.")
+        except Exception as e:
+            logging.error(f"Automation failed: {e}")
+
+
+# Example usage
+if __name__ == "__main__":
+    automation = JenkinsAutomation(
+        root_dir="C:/projects/xmls",  # Root directory containing files
+        jenkins_url="http://localhost:8080",  # Replace with your Jenkins URL
+        job_name="DeployPipeline",  # Replace with your Jenkins job name
+        username="your-gitlab-username",  # Replace with your GitLab username
+        password="your-gitlab-password",  # Replace with your GitLab personal access token or password
+        gitlab_repo_url="https://gitlab.com/your-repo-url.git",  # Replace with your GitLab repository URL
+        screenshot_dir="C:/my_project/screenshots",  # Replace with your desired screenshot directory
+        log_dir="C:/my_project/logs"  # Replace with your desired log directory
+    )
+    automation.run_automation()
+
+
+
+
+
+
+
+
+
+
+
+
+
+Key Changes
+GitLab Integration:
+The push_to_gitlab method replaces the old push_to_bitbucket method.
+It uses Git commands to push the unique ZIP file to your GitLab repository.
+Authentication:
+The GitLab repository URL is modified to include your username and password (or personal access token) for authentication:
+python
+
+
+1
+remote_url = self.gitlab_repo_url.replace("https://", f"https://{self.username}:{self.password}@")
+Alternatively, you can use SSH keys for authentication instead of embedding credentials.
+Dynamic Repository URL:
+The gitlab_repo_url parameter is passed during initialization, making the script adaptable to any GitLab repository.
+Branch Name:
+The script assumes the default branch is main. If your repository uses a different branch (e.g., master), update the git push command accordingly:
+python
+
+
+1
+"git push origin master"
+How It Works
+Specify the root directory (e.g., C:/projects/xmls) containing multiple files.
+The script will:
+Update the dates in all .xml files.
+Create a single unique ZIP file (e.g., all_files_20231007_143000.zip) containing all files.
+Push the ZIP file to your GitLab repository.
+Pass the unique ZIP file name dynamically to Jenkins as a build parameter.
+Example Output
+If the C:/projects/xmls directory contains:
+
+config1.xml
+config2.xml
+data.acq
+report.rec
+The script will:
+
+Update the dates in config1.xml and config2.xml.
+Create a single ZIP file named all_files_20231007_143000.zip containing all four files.
+Push all_files_20231007_143000.zip to your GitLab repository.
+Trigger a Jenkins build with the parameter all_files_20231007_143000.zip.
+Security Note
+Embedding credentials directly in the script (e.g., username and password) is not recommended for production environments. Instead:
+
+Use a personal access token from GitLab for authentication.
+Store sensitive information securely using environment variables or a secrets manager.
